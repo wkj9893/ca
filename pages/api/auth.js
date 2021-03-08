@@ -1,16 +1,14 @@
-import jwt from "jsonwebtoken";
-import { secret } from "../../secret";
-
+import { verify } from "jsonwebtoken";
 
 export default (req, res) => {
-    const { token } = req.body;
-    jwt.verify(token, secret, function (err, decoded) {
-        if (!err && decoded) {
-            res.json({ username: decoded.username });
-        } else {
-            res.status(401).json({ message: 'Sorry you are not authenticated' });
-        }
-
+  try {
+    const decoded = verify(req.cookies.auth, process.env.SECRET);
+    res.status(200).json({
+      username: decoded.username,
     });
-
-}
+  } catch (error) {
+    res.status(401).json({
+      message: error.name + ": " + error.message,
+    });
+  }
+};

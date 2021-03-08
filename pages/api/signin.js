@@ -1,64 +1,44 @@
-import mysql from "mysql";
-import bcrypt from 'bcryptjs';
+import User from "../../models/User";
+import dbConnect from "../../utils/dbConnect";
 import jwt from "jsonwebtoken";
-import { secret } from "../../secret";
+import cookie from "cookie";
+import bcrypt from "bcrypt";
 
+export default async (req, res) => {
+  if (req.method == "POST") {
+    await dbConnect();
 
-export default (req, res) => {
+    const { username, password } = req.body;
+    try {
+      const user = await User.findOne({
+        username: username,
+      });
+      if (!user) {
+        res.json({ message: "username dose not exist" });
+        return;
+      }
+      const match = await bcrypt.compare(password, user.password);
+      if (match) {
+        const token = jwt.sign({ iss: "wkj", username: username }, process.env.SECRET, { expiresIn: "1h" });
+        res.setHeader(
+          "Set-Cookie",
+          cookie.serialize("auth", token, {
+            httpOnly: true,
+            sameSite: "strict",
+            maxAge: 3600,
+            path: "/",
+            secure: process.env.NODE_ENV === "production",
+          })
+        );
 
-    if (req.method == "POST") {
-        const { username, password } = req.body;
-        // 连接数据库
-        const db = mysql.createPool({
-            host: 'localhost',
-            user: 'root',
-            password: 'root',
-            database: 'ca',
-        });
-
-
-        db.query('SELECT * FROM user WHERE username = ?',
-            [username], (err, result) => {
-                if (err || !result[0]) {
-                    res.json({ message: 'false' })
-                }
-                else {
-                    //比较用户登录密码是否与数据库密码相同(Hash)
-                    bcrypt.compare(password, result[0].password, function (error, response) {
-                        if (error) {
-                            console.log(error);
-                        }
-                        //如果相同，设置token
-                        if (response) {
-                            const token = jwt.sign({ iss: "wkj", "username": username }, secret, { expiresIn: '1h' });
-                            res.json({
-                                message: "true",
-                                token: token
-                            })
-                        } else {
-                            res.json({
-                                message: "false"
-                            })
-                        }
-
-                    });
-                }
-            })
-
-    } else {
-        res.status(405).json({ message: "we only support POST" });
+        res.status(200).json({ message: "success", token: token });
+      } else {
+        res.json({ message: "wrong password" });
+      }
+    } catch (error) {
+      res.json({ message: error.name + ": " + error.message });
     }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
+  } else {
+    res.status(405).json({ message: "Method Not Allowed" });
+  }
+};

@@ -1,31 +1,21 @@
-import mysql from "mysql";
+import Certificate from "../../models/Certificate";
+import dbConnect from "../../utils/dbConnect";
 
-
-
-export default (req, res) => {
-
-    const number = req.body.number;
-
-
-    // 连接数据库
-    const db = mysql.createPool({
-        host: 'localhost',
-        user: 'root',
-        password: 'root',
-        database: 'ca',
+export default async (req, res) => {
+  const { username } = req.body;
+  try {
+    await dbConnect();
+    const cert = await Certificate.findOne({ username: username });
+    res.status(200).json({
+      serialNumber: cert.serialNumber,
+      start_time: cert.start_time,
+      end_time: cert.end_time,
+      pem: cert.pem,
+      public_key: cert.public_key,
+      private_key: cert.private_key,
+      username: cert.username,
     });
-    db.query('SELECT * FROM certificate WHERE serialNumber = ?',
-        [number], (err, result) => {
-            if (err) {
-                console.log(err);
-            }
-            res.json({
-                serialNumber: result[0].serialNumber,
-                start_time: result[0].start_time,
-                end_time: result[0].end_time,
-                pem: result[0].pem,
-            })
-
-        })
-
-}
+  } catch (error) {
+    res.json({ message: error.name + ": " + error.message });
+  }
+};

@@ -7,6 +7,7 @@ import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import List from "@material-ui/core/List";
 import Typography from "@material-ui/core/Typography";
+import Box from "@material-ui/core/Box";
 import Divider from "@material-ui/core/Divider";
 import IconButton from "@material-ui/core/IconButton";
 import MenuIcon from "@material-ui/icons/Menu";
@@ -19,60 +20,59 @@ import ShoppingCartIcon from "@material-ui/icons/ShoppingCart";
 import PeopleIcon from "@material-ui/icons/People";
 import BarChartIcon from "@material-ui/icons/BarChart";
 import AssignmentIcon from "@material-ui/icons/Assignment";
-import { useRouter } from 'next/router'
-import TextField from "@material-ui/core/TextField";
+import { useRouter } from "next/router";
 import axios from "axios";
-import { useEffect } from "react";
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
-import { Button, Container, Menu, MenuItem } from "@material-ui/core";
+import { useEffect, useState } from "react";
+import Table from "@material-ui/core/Table";
+import TableBody from "@material-ui/core/TableBody";
+import TableCell from "@material-ui/core/TableCell";
+import TableHead from "@material-ui/core/TableHead";
+import TableRow from "@material-ui/core/TableRow";
+import { Container, Menu, MenuItem } from "@material-ui/core";
 import AccountCircle from "@material-ui/icons/AccountCircle";
-
-
-
-
+import Copyright from "../../components/Copyright";
+import useUser from "../../hooks/useUser";
+import TableContainer from "@material-ui/core/TableContainer";
+import Paper from "@material-ui/core/Paper";
 const drawerWidth = 240;
 
 const useStyles = makeStyles((theme) => ({
   root: {
-    display: "flex"
+    display: "flex",
   },
   toolbar: {
-    paddingRight: 24 // keep right padding when drawer closed
+    paddingRight: 24, // keep right padding when drawer closed
   },
   toolbarIcon: {
     display: "flex",
     alignItems: "center",
     justifyContent: "flex-end",
     padding: "0 8px",
-    ...theme.mixins.toolbar
+    ...theme.mixins.toolbar,
   },
   appBar: {
     zIndex: theme.zIndex.drawer + 1,
     transition: theme.transitions.create(["width", "margin"], {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen
-    })
+      duration: theme.transitions.duration.leavingScreen,
+    }),
   },
   appBarShift: {
     marginLeft: drawerWidth,
     width: `calc(100% - ${drawerWidth}px)`,
     transition: theme.transitions.create(["width", "margin"], {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen
-    })
+      duration: theme.transitions.duration.enteringScreen,
+    }),
   },
   menuButton: {
-    marginRight: 36
+    marginRight: 36,
   },
   menuButtonHidden: {
-    display: "none"
+    display: "none",
   },
   title: {
-    flexGrow: 1
+    flexGrow: 1,
   },
   drawerPaper: {
     position: "relative",
@@ -80,83 +80,80 @@ const useStyles = makeStyles((theme) => ({
     width: drawerWidth,
     transition: theme.transitions.create("width", {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen
-    })
+      duration: theme.transitions.duration.enteringScreen,
+    }),
   },
   drawerPaperClose: {
     overflowX: "hidden",
     transition: theme.transitions.create("width", {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen
+      duration: theme.transitions.duration.leavingScreen,
     }),
     width: theme.spacing(7),
     [theme.breakpoints.up("sm")]: {
-      width: theme.spacing(9)
-    }
+      width: theme.spacing(9),
+    },
   },
   appBarSpacer: theme.mixins.toolbar,
   content: {
     flexGrow: 1,
     height: "100vh",
-    overflow: "auto"
+    overflow: "auto",
   },
   container: {
     paddingTop: theme.spacing(4),
-    paddingBottom: theme.spacing(4)
+    paddingBottom: theme.spacing(4),
   },
   paper: {
     padding: theme.spacing(2),
     display: "flex",
     overflow: "auto",
-    flexDirection: "column"
+    flexDirection: "column",
   },
   fixedHeight: {
-    height: 240
+    height: 240,
   },
   form: {
     width: "100%", // Fix IE 11 issue.
     height: "100%",
-    marginTop: theme.spacing(24)
+    marginTop: theme.spacing(24),
   },
   submit: {
-    margin: theme.spacing(3, 0, 2)
+    margin: theme.spacing(3, 0, 2),
   },
   table: {
-    marginTop: theme.spacing(48),
-    marginRight: theme.spacing(20)
-  }
+    minWidth: 650,
+  },
 }));
 
 export default function Dashboard() {
   const router = useRouter();
-  const [username, setUsername] = React.useState("");
-  const [serialNumber, setSerialNumber] = React.useState("")
-  const [row, setRow] = React.useState(({
-    serialNumber: '',
-    start_time: '',
-    end_time: '',
-    pem: '',
+  const [rows, setRows] = useState([
+    {
+      serialNumber: "",
+      start_time: "",
+      end_time: "",
+      pem: "",
+    },
+  ]);
 
-  }))
+  const { username, isLoading, isError } = useUser();
 
   useEffect(() => {
-    const token = localStorage.getItem("token")
-    axios.post("/api/auth", {
-      token: token
-    })
-      .then((response) => {
-        if (response.data.username) {
-          setUsername(response.data.username);
-        } else {
-          router.push("/signin");
-        }
-      })
-      .catch((error) => {
-        console.log(error);
-        router.push("/signin");
-      })
-
-  }, []);
+    if (isError) {
+      router.push("/signin");
+    }
+  }, [isError]);
+  useEffect(async () => {
+    if (username) {
+      const response = await axios.post("/api/view", {
+        username: username,
+      });
+      setRows([response.data]);
+    }
+  }, [username]);
+  if (isError) return <div>You are not authorized </div>;
+  if (isLoading) return <div>loading...</div>;
   const classes = useStyles();
   const [open, setOpen] = React.useState(true);
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -175,86 +172,52 @@ export default function Dashboard() {
   const handleDrawerClose = () => {
     setOpen(false);
   };
-  const fixedHeightPaper = clsx(classes.paper, classes.fixedHeight);
-  const handle_sumbit = (event) => {
-    event.preventDefault();
-    axios.post("/api/view", {
-      number: serialNumber
-    }).then((response) => {
-      setRow(response.data);
-    }).catch((error) => {
-      console.log(error);
-    })
-
-  }
   return (
     <div className={classes.root}>
       <CssBaseline />
-      <AppBar
-        position="absolute"
-        className={clsx(classes.appBar, open && classes.appBarShift)}
-      >
+      <AppBar position="absolute" className={clsx(classes.appBar, open && classes.appBarShift)}>
         <Toolbar className={classes.toolbar}>
-          <IconButton
-            edge="start"
-            color="inherit"
-            aria-label="open drawer"
-            onClick={handleDrawerOpen}
-            className={clsx(
-              classes.menuButton,
-              open && classes.menuButtonHidden
-            )}
-          >
+          <IconButton edge="start" color="inherit" aria-label="open drawer" onClick={handleDrawerOpen} className={clsx(classes.menuButton, open && classes.menuButtonHidden)}>
             <MenuIcon />
           </IconButton>
-          <Typography
-            component="h1"
-            variant="h6"
-            color="inherit"
-            noWrap
-            className={classes.title}
-          >
+          <Typography component="h1" variant="h6" color="inherit" noWrap className={classes.title}>
             Dashboard
           </Typography>
 
-          <IconButton
-            aria-label="account of current user"
-            aria-controls="menu-appbar"
-            aria-haspopup="true"
-            onClick={handleMenu}
-            color="inherit"
-          >
+          <IconButton aria-label="account of current user" aria-controls="menu-appbar" aria-haspopup="true" onClick={handleMenu} color="inherit">
             <AccountCircle />
           </IconButton>
           <Menu
             id="menu-appbar"
             anchorEl={anchorEl}
             anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
+              vertical: "top",
+              horizontal: "right",
             }}
             keepMounted
             transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
+              vertical: "top",
+              horizontal: "right",
             }}
             open={open_anchor}
             onClose={handleClose}
           >
-            <MenuItem onClick={handleClose}>个人信息</MenuItem>
-            <MenuItem onClick={() => {
-              localStorage.removeItem("token");
-              router.push("/signin");
-            }}>退出登录</MenuItem>
+            <MenuItem onClick={() => router.push("/dashboard/info")}>个人信息</MenuItem>
+            <MenuItem
+              onClick={async () => {
+                await fetch("/api/logout");
+                router.push("/signin");
+              }}
+            >
+              退出登录
+            </MenuItem>
           </Menu>
-
-
         </Toolbar>
       </AppBar>
       <Drawer
         variant="permanent"
         classes={{
-          paper: clsx(classes.drawerPaper, !open && classes.drawerPaperClose)
+          paper: clsx(classes.drawerPaper, !open && classes.drawerPaperClose),
         }}
         open={open}
       >
@@ -344,130 +307,33 @@ export default function Dashboard() {
           }
         </List>
       </Drawer>
-      <Container component="main" maxWidth="xs">
-        <CssBaseline />
-
-        <div className={classes.paper}>
-          <form className={classes.form} noValidate>
-
-
-            <TextField
-              variant="outlined"
-              margin="normal"
-              required
-              fullWidth
-              id="password"
-              label="证书序列号"
-              name="password"
-              autoComplete="password"
-              onChange={(e) => setSerialNumber(e.target.value)}
-              autoFocus
-            />
-
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              color="primary"
-              className={classes.submit}
-              onClick={(event) => { handle_sumbit(event) }}
-            >
-              提交
-            </Button>
-
-          </form>
-        </div>
-
-      </Container>
-      <Table className={classes.table} aria-label="simple table">
-        <TableHead>
-          <TableRow>
-            <TableCell>证书序列号</TableCell>
-            <TableCell align="right">起始时间</TableCell>
-            <TableCell align="right">截至时间</TableCell>
-            <TableCell align="right">证书</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-
-          <TableRow key={row.serialNumber}>
-            <TableCell component="th" scope="row">
-              {row.serialNumber}
-            </TableCell>
-            <TableCell align="right">{row.start_time}</TableCell>
-            <TableCell align="right">{row.end_time}</TableCell>
-            <TableCell align="right"> <textarea id="w3review" name="w3review" rows="15" cols="70" defaultValue={row.pem}>
-            </textarea>
-            </TableCell>
-
-          </TableRow>
-
-        </TableBody>
-      </Table>
+      <TableContainer component={Paper} style={{ marginTop: "10%", marginLeft: "5%", marginRight: "3%" }}>
+        <Table className={classes.table}>
+          <TableHead>
+            <TableRow>
+              <TableCell align="center">证书序列号</TableCell>
+              <TableCell align="center">起始时间</TableCell>
+              <TableCell align="center">截至时间</TableCell>
+              <TableCell align="center">证书</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={row.serialNumber}>
+                <TableCell align="center" component="th" scope="row">
+                  {row.serialNumber}
+                </TableCell>
+                <TableCell align="center">{row.start_time}</TableCell>
+                <TableCell align="center">{row.end_time}</TableCell>
+                <TableCell align="center">
+                  {" "}
+                  <textarea id="w3review" name="w3review" rows="15" cols="70" defaultValue={row.pem}></textarea>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
     </div>
-    /* <Container component="form" maxWidth="xs">
-      <CssBaseline />
-      <div className={classes.appBarSpacer} />
-      <div className={classes.paper}>
-        <form className={classes.form} noValidate>
-
-
-          <TextField
-            variant="outlined"
-            margin="normal"
-            required
-            fullWidth
-            id="password"
-            label="证书序列号"
-            name="password"
-            autoComplete="password"
-            onChange={(e) => setSerialNumber(e.target.value)}
-            autoFocus
-          />
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            color="primary"
-            className={classes.submit}
-            onClick={(event) => { handle_sumbit(event) }}
-          >
-            提交
-        </Button>
-
-        </form>
-      </div>
-
-
-    </Container>
-
-    <Table className={classes.table} aria-label="simple table">
-      <TableHead>
-        <TableRow>
-          <TableCell>证书序列号</TableCell>
-          <TableCell align="right">起始时间</TableCell>
-          <TableCell align="right">截至时间</TableCell>
-          <TableCell align="right">证书</TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-
-        <TableRow key={row.serialNumber}>
-          <TableCell component="th" scope="row">
-            {row.serialNumber}
-          </TableCell>
-          <TableCell align="right">{row.start_time}</TableCell>
-          <TableCell align="right">{row.end_time}</TableCell>
-          <TableCell align="right">            <textarea id="w3review" name="w3review" rows="15" cols="70" defaultValue={row.pem}>
-          </textarea>
-          </TableCell>
-
-        </TableRow>
-
-      </TableBody>
-    </Table>
-
-  </div> */
   );
 }

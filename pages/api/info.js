@@ -1,41 +1,18 @@
-import mysql from "mysql";
+import Certificate from "../../models/Certificate";
 import { decrypt } from "../../crypto/aes";
+import dbConnect from "../../utils/dbConnect";
 
-
-export default (req, res) => {
-    const { username, passphrase } = req.body;
-    // 连接数据库
-    const db = mysql.createPool({
-        host: 'localhost',
-        user: 'root',
-        password: 'root',
-        database: 'ca',
+export default async (req, res) => {
+  const { username, passphrase } = req.body;
+  try {
+    await dbConnect();
+    const cert = await Certificate.findOne({ username: username });
+    const private_key = decrypt(cert.private_key, passphrase);
+    res.status(200).json({
+      username: username,
+      private_key: private_key,
     });
-    db.query('SELECT * FROM certificate WHERE username = ?',
-        [username], (err, result) => {
-            if (err) {
-                console.log(err);
-            };
-            if (!result[0].private_key) {
-                console.log("不存在该用户");
-            }
-            try {
-                const private_key = decrypt(result[0].private_key, passphrase);
-
-                console.log(private_key)
-                if (private_key) {
-                    return res.json({
-                        username: username,
-                        private_key: private_key
-                    })
-                }
-            } catch (err) {
-                return res.json({
-                    msg: 'false',
-                })
-                console.log(err)
-            }
-
-        })
-
-}
+  } catch (error) {
+    res.json({ message: error.name + ": " + error.message });
+  }
+};

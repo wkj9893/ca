@@ -1,61 +1,62 @@
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+import Head from "next/head";
+import Copyright from "../components/Copyright";
+import { useRouter } from "next/router";
+import React, { useEffect } from "react";
+import Typography from "@material-ui/core/Typography";
+import styles from "../styles/Home.module.css";
+
+import useUser from "../hooks/useUser";
 
 export default function Home() {
+  const router = useRouter();
+
+  const { username, isLoading, isError } = useUser();
+
+  useEffect(() => {
+    if (isError) {
+      router.push("/signin");
+    }
+  }, [isError]);
+  if (isError) return <div>You are not authorized </div>;
+  if (isLoading) return <div>loading...</div>;
+
   return (
     <div className={styles.container}>
       <Head>
-        <title>Certificate Authority</title>
-        <link rel="icon" href="/favicon.ico" />
+        <title>CA认证中心</title>
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="http://172.20.118.125:3000/signin">HIT数字证书认证中心</a>
-        </h1>
-
+        <Typography className={styles.title} variant="h3" align="center" gutterBottom>
+          Certificate Authority
+        </Typography>
 
         <div className={styles.grid}>
-          <a href="http://172.20.118.125:3000/signin" className={styles.card}>
+          <a href="/signin" className={styles.card}>
             <h3>登录 &rarr;</h3>
             <p>登录已有账号</p>
           </a>
 
-          <a href="http://172.20.118.125:3000/signup" className={styles.card}>
+          <a href="/signup" className={styles.card}>
             <h3>注册 &rarr;</h3>
             <p>注册新账号</p>
           </a>
 
-          <a
-            href="http://172.20.118.125:3000/verify"
-            className={styles.card}
-          >
-            <h3>验证证书 &rarr;</h3>
-            <p>上传证书并进行验证</p>
+          <a href="/dashboard/apply" className={styles.card}>
+            <h3>申请证书 &rarr;</h3>
+            <p>为网站申请证书</p>
           </a>
 
-          <a
-            href="http://172.20.118.125:3000/dashboard/info"
-            className={styles.card}
-          >
+          <a href="/dashboard/info" className={styles.card}>
             <h3>个人页面 &rarr;</h3>
-            <p>
-              登录后直接进入个人页面
-            </p>
+            <p>登录后直接进入个人页面</p>
           </a>
         </div>
       </main>
 
       <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
+        <Copyright />
       </footer>
     </div>
-  )
+  );
 }

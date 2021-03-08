@@ -1,37 +1,15 @@
-import mysql from "mysql";
-
-
-export default (req, res) => {
-    const number = req.body.number;
-    // 连接数据库
-    const db = mysql.createPool({
-        host: 'localhost',
-        user: 'root',
-        password: 'root',
-        database: 'ca',
+import Certificate from "../../models/Certificate";
+import dbConnect from "../../utils/dbConnect";
+export default async (req, res) => {
+  try {
+    await dbConnect();
+    const { number } = req.body;
+    const cert = await Certificate.findOne({ serialNumber: number });
+    res.status(200).json({
+      pem: cert.pem,
+      filename: `${number}.pem`,
     });
-    db.query(
-        'SELECT * FROM certificate WHERE serialNumber = ?',
-        [number],
-        (err, result) => {
-            if (err) {
-                res.send({
-                    err: err
-                });
-            }
-            if (result.length > 0) {
-                res.json({
-                    filename: `${number}.pem`,
-                    pem: result[0].pem
-                })
-            } else {
-                res.send({
-                    message: 'Wrong username/password combination!'
-                });
-            }
-
-
-        }
-    );
-
-}
+  } catch (error) {
+    res.json({ message: error.name + ": " + error.message });
+  }
+};

@@ -1,55 +1,49 @@
+import forge from "node-forge";
 import handler from "../../crypto/ClientRequestHandler";
-import fs from 'fs';
-import forge from 'node-forge';
-import mysql from "mysql";
 import { encrypt } from "../../crypto/aes";
+import Certificate from "../../models/Certificate";
+import dbConnect from "../../utils/dbConnect";
 
+export default async (req, res) => {
+  if (req.method == "POST") {
+    try {
+      await dbConnect();
+      const { username, commonName, country, state, locality, organization, ou, year, passphrase } = req.body;
 
+      const OneCert = await Certificate.findOne({
+        username: username,
+      });
+      if (OneCert) {
+        await Certificate.deleteOne({ username: username });
+      }
 
-export default (req, res) => {
-    const username = req.body.username;
-    const commonName = req.body.commonName;
-    const country = req.body.country;
-    const state = req.body.state;
-    const locality = req.body.locality;
-    const organization = req.body.organization;
-    const ou = req.body.ou;
-    const year = req.body.year;
-    const passphrase = req.body.passphrase;
+      const cert = handler(commonName, country, state, locality, organization, ou, year);
+      const start_time = cert.validity.notBefore;
+      const end_time = cert.validity.notAfter;
+      const public_key = forge.pki.publicKeyToPem(cert.publicKey);
+      const private_key = encrypt(forge.pki.privateKeyToPem(cert.privateKey), passphrase);
+      const number = cert.serialNumber;
+      const pem = forge.pki.certificateToPem(cert);
 
-    const cert = handler(commonName, country, state, locality, organization, ou, year);
-    const start_time = cert.validity.notBefore;
-    const end_time = cert.validity.notAfter;
-    const public_key = forge.pki.publicKeyToPem(cert.publicKey);
-    const private_key = encrypt(forge.pki.privateKeyToPem(cert.privateKey), passphrase);
-    const number = cert.serialNumber;
-    const pem = forge.pki.certificateToPem(cert);
-
-    console.log(private_key);
-
-
-    // 连接数据库
-    const db = mysql.createPool({
-        host: 'localhost',
-        user: 'root',
-        password: 'root',
-        database: 'ca',
-    });
-
-    db.query(
-        'INSERT INTO certificate(serialNumber,start_time,end_time,pem,public_key,private_key,username) VALUES (?,?,?,?,?,?,?)',
-        [number, start_time, end_time, pem, public_key, private_key, username],
-        (err) => {
-            console.log(err);
-        }
-    );
-
-    fs.writeFile(`C:/cert/${number}.pem`, pem, function (err) {
-        if (err) throw err;
-    });
-
-    return res.json({
+      const certificate = Certificate({
+        serialNumber: number,
+        start_time: start_time,
+        end_time: end_time,
+        pem: pem,
+        public_key: public_key,
+        private_key: private_key,
+        username: username,
+      });
+      await certificate.save();
+      res.json({
+        message: "success",
+        pem: pem,
         filename: `${number}.pem`,
-        pem: pem
-    });
-}
+      });
+    } catch (error) {
+      res.json({ message: error.name + ": " + error.message });
+    }
+  } else {
+    res.status(405).json({ message: "Method Not Allowed" });
+  }
+};

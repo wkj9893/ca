@@ -1,4 +1,3 @@
-//@ts-check
 import React, { useEffect } from "react";
 import clsx from "clsx";
 import { makeStyles } from "@material-ui/core/styles";
@@ -25,65 +24,53 @@ import ShoppingCartIcon from "@material-ui/icons/ShoppingCart";
 import PeopleIcon from "@material-ui/icons/People";
 import BarChartIcon from "@material-ui/icons/BarChart";
 import AssignmentIcon from "@material-ui/icons/Assignment";
-import { useRouter } from 'next/router'
+import { useRouter } from "next/router";
 import axios from "axios";
 import { Menu, MenuItem } from "@material-ui/core";
 import AccountCircle from "@material-ui/icons/AccountCircle";
 import fileDownload from "js-file-download";
-
-
-function Copyright() {
-  return (
-    <Typography variant="body2" color="textSecondary" align="center">
-      {"Copyright © "}
-      <Link color="inherit" href="https://material-ui.com/">
-        Your Website
-      </Link>{" "}
-      {new Date().getFullYear()}
-      {"."}
-    </Typography>
-  );
-}
+import Copyright from "../../components/Copyright";
+import useUser from "../../hooks/useUser";
 
 const drawerWidth = 240;
 
 const useStyles = makeStyles((theme) => ({
   root: {
-    display: "flex"
+    display: "flex",
   },
   toolbar: {
-    paddingRight: 24 // keep right padding when drawer closed
+    paddingRight: 24, // keep right padding when drawer closed
   },
   toolbarIcon: {
     display: "flex",
     alignItems: "center",
     justifyContent: "flex-end",
     padding: "0 8px",
-    ...theme.mixins.toolbar
+    ...theme.mixins.toolbar,
   },
   appBar: {
     zIndex: theme.zIndex.drawer + 1,
     transition: theme.transitions.create(["width", "margin"], {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen
-    })
+      duration: theme.transitions.duration.leavingScreen,
+    }),
   },
   appBarShift: {
     marginLeft: drawerWidth,
     width: `calc(100% - ${drawerWidth}px)`,
     transition: theme.transitions.create(["width", "margin"], {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen
-    })
+      duration: theme.transitions.duration.enteringScreen,
+    }),
   },
   menuButton: {
-    marginRight: 36
+    marginRight: 36,
   },
   menuButtonHidden: {
-    display: "none"
+    display: "none",
   },
   title: {
-    flexGrow: 1
+    flexGrow: 1,
   },
   drawerPaper: {
     position: "relative",
@@ -91,19 +78,19 @@ const useStyles = makeStyles((theme) => ({
     width: drawerWidth,
     transition: theme.transitions.create("width", {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen
-    })
+      duration: theme.transitions.duration.enteringScreen,
+    }),
   },
   drawerPaperClose: {
     overflowX: "hidden",
     transition: theme.transitions.create("width", {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen
+      duration: theme.transitions.duration.leavingScreen,
     }),
     width: theme.spacing(7),
     [theme.breakpoints.up("sm")]: {
-      width: theme.spacing(9)
-    }
+      width: theme.spacing(9),
+    },
   },
   appBarSpacer: theme.mixins.toolbar,
   content: {
@@ -114,49 +101,38 @@ const useStyles = makeStyles((theme) => ({
   },
   container: {
     paddingTop: theme.spacing(4),
-
   },
   paper: {
     marginTop: theme.spacing(8),
     display: "flex",
     flexDirection: "column",
-    alignItems: "center"
+    alignItems: "center",
   },
   fixedHeight: {
-    height: 240
+    height: 240,
   },
   form: {
     width: "100%", // Fix IE 11 issue.
-    marginTop: theme.spacing(1)
+    marginTop: theme.spacing(1),
   },
   submit: {
-    margin: theme.spacing(3, 0, 2)
-  }
+    margin: theme.spacing(3, 0, 2),
+  },
 }));
 
 export default function Dashboard() {
   const router = useRouter();
-  const [username, setUsername] = React.useState("");
   const [serialNumber, setSerialNumber] = React.useState("");
 
-  useEffect(() => {
-    const token = localStorage.getItem("token")
-    axios.post("/api/auth", {
-      token: token
-    })
-      .then((response) => {
-        if (response.data.username) {
-          setUsername(response.data.username);
-        } else {
-          router.push("/signin");
-        }
-      })
-      .catch((error) => {
-        console.log(error);
-        router.push("/signin");
-      })
+  const { username, isLoading, isError } = useUser();
 
-  }, []);
+  useEffect(() => {
+    if (isError) {
+      router.push("/signin");
+    }
+  }, [isError]);
+  if (isError) return <div>You are not authorized </div>;
+  if (isLoading) return <div>loading...</div>;
   const classes = useStyles();
   const [open, setOpen] = React.useState(true);
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -177,94 +153,68 @@ export default function Dashboard() {
   };
   const fixedHeightPaper = clsx(classes.paper, classes.fixedHeight);
 
-  function download(event) {
+  async function download(event) {
     event.preventDefault();
-    axios.post('/api/download', {
-      number: serialNumber
-    })
-      .then((response) => {
+    try {
+      const response = await axios.post("/api/download", {
+        number: serialNumber,
+      });
 
-        const pem = response.data.pem;
-        const filename = response.data.filename;
-        if (pem != null && filename != null) {
-          fileDownload(pem, filename);
-        } else {
-          alert('证书生成发生错误');
-        }
-
-      })
-      .catch((error) => {
-        console.log(error);
-      })
-
-
+      if (response.data && response.data.pem) {
+        fileDownload(response.data.pem, response.data.filename);
+      } else {
+        alert("不存在该证书序列号");
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }
   return (
     <div className={classes.root}>
       <CssBaseline />
-      <AppBar
-        position="absolute"
-        className={clsx(classes.appBar, open && classes.appBarShift)}
-      >
+      <AppBar position="absolute" className={clsx(classes.appBar, open && classes.appBarShift)}>
         <Toolbar className={classes.toolbar}>
-          <IconButton
-            edge="start"
-            color="inherit"
-            aria-label="open drawer"
-            onClick={handleDrawerOpen}
-            className={clsx(
-              classes.menuButton,
-              open && classes.menuButtonHidden
-            )}
-          >
+          <IconButton edge="start" color="inherit" aria-label="open drawer" onClick={handleDrawerOpen} className={clsx(classes.menuButton, open && classes.menuButtonHidden)}>
             <MenuIcon />
           </IconButton>
-          <Typography
-            component="h1"
-            variant="h6"
-            color="inherit"
-            noWrap
-            className={classes.title}
-          >
+          <Typography component="h1" variant="h6" color="inherit" noWrap className={classes.title}>
             Dashboard
           </Typography>
 
-          <IconButton
-            aria-label="account of current user"
-            aria-controls="menu-appbar"
-            aria-haspopup="true"
-            onClick={handleMenu}
-            color="inherit"
-          >
+          <IconButton aria-label="account of current user" aria-controls="menu-appbar" aria-haspopup="true" onClick={handleMenu} color="inherit">
             <AccountCircle />
           </IconButton>
           <Menu
             id="menu-appbar"
             anchorEl={anchorEl}
             anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
+              vertical: "top",
+              horizontal: "right",
             }}
             keepMounted
             transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
+              vertical: "top",
+              horizontal: "right",
             }}
             open={open_anchor}
             onClose={handleClose}
           >
-            <MenuItem onClick={handleClose}>个人信息</MenuItem>
-            <MenuItem onClick={() => {
-              localStorage.removeItem("token");
-              router.push("/signin");
-            }}>退出登录</MenuItem>
+            <MenuItem onClick={() => router.push("/dashboard/info")}>个人信息</MenuItem>
+            <MenuItem
+              onClick={async () => {
+                await fetch("/api/logout");
+                router.push("/signin");
+              }}
+            >
+              退出登录
+            </MenuItem>
           </Menu>
         </Toolbar>
       </AppBar>
       <Drawer
         variant="permanent"
         classes={{
-          paper: clsx(classes.drawerPaper, !open && classes.drawerPaperClose)
+          paper: clsx(classes.drawerPaper, !open && classes.drawerPaperClose),
         }}
         open={open}
       >
@@ -321,7 +271,6 @@ export default function Dashboard() {
                 </ListItemIcon>
                 <ListItemText primary="查看证书" />
               </ListItem>
-
             </div>
           }
         </List>
@@ -361,8 +310,6 @@ export default function Dashboard() {
         <div className={classes.appBarSpacer} />
         <div className={classes.paper}>
           <form className={classes.form} noValidate>
-
-
             <TextField
               variant="outlined"
               margin="normal"
@@ -384,18 +331,15 @@ export default function Dashboard() {
               className={classes.submit}
               onClick={(event) => {
                 download(event);
-
               }}
             >
               提交
-          </Button>
-
+            </Button>
           </form>
         </div>
         <Box mt={8}>
           <Copyright />
         </Box>
-
       </Container>
     </div>
   );

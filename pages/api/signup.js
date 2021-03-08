@@ -1,38 +1,39 @@
-import mysql from "mysql";
-import bcrypt from 'bcryptjs';
+import User from "../../models/User";
+import dbConnect from "../../utils/dbConnect";
+import bcrypt from "bcrypt";
 
+export default async (req, res) => {
+  if (req.method === "POST") {
+    await dbConnect();
+    const { username, password } = req.body;
+    const saltRounds = 10;
 
-export default (req, res) => {
-    if (req.method === "POST") {
-
-        const { username, password } = req.body;
-
-        bcrypt.hash(password, 10, function (err, hash) {
-
-            // 连接数据库
-            const db = mysql.createPool({
-                host: 'localhost',
-                user: 'root',
-                password: 'root',
-                database: 'ca',
-            });
-
-            db.query(
-                'INSERT INTO user(username,password) VALUES (?,?)',
-                [username, hash],
-                (err, result) => {
-                    if (err) {
-                        console.log(err);
-                    }
-                }
-            );
-
-            res.json({
-                message: "true",
-            })
+    try {
+      const oneUser = await User.findOne({
+        username: username,
+      });
+      if (oneUser) {
+        res.json({
+          message: "username already exist",
         });
-    } else {
-        res.status(405).json({ message: "we only support POST" })
-    }
+        return;
+      }
+      const hash = await bcrypt.hash(password, saltRounds);
+      const user = new User({
+        username: username,
+        password: hash,
+      });
 
-}
+      await user.save();
+      res.status(200).json({
+        message: "success",
+      });
+    } catch (error) {
+      res.json({
+        message: error.name + ": " + error.message,
+      });
+    }
+  } else {
+    res.status(405).json({ message: "Method Not Allowed" });
+  }
+};

@@ -9,7 +9,6 @@ import List from "@material-ui/core/List";
 import Typography from "@material-ui/core/Typography";
 import Divider from "@material-ui/core/Divider";
 import IconButton from "@material-ui/core/IconButton";
-import Link from "@material-ui/core/Link";
 import MenuIcon from "@material-ui/icons/Menu";
 import ChevronLeftIcon from "@material-ui/icons/ChevronLeft";
 import ListItem from "@material-ui/core/ListItem";
@@ -20,69 +19,52 @@ import ShoppingCartIcon from "@material-ui/icons/ShoppingCart";
 import PeopleIcon from "@material-ui/icons/People";
 import BarChartIcon from "@material-ui/icons/BarChart";
 import AssignmentIcon from "@material-ui/icons/Assignment";
-import { useRouter } from 'next/router'
+import { useRouter } from "next/router";
 import axios from "axios";
 import { useEffect } from "react";
-import { Box, Button, Container, Grid, Menu, MenuItem, Paper, TextField } from "@material-ui/core";
+import { Box, Button, Container, Menu, MenuItem, TextField } from "@material-ui/core";
 import AccountCircle from "@material-ui/icons/AccountCircle";
-
-
-
-
-
-
-function Copyright() {
-  return (
-    <Typography variant="body2" color="textSecondary" align="center">
-      {"Copyright © "}
-      <Link color="inherit" href="https://material-ui.com/">
-        Your Website
-      </Link>{" "}
-      {new Date().getFullYear()}
-      {"."}
-    </Typography>
-  );
-}
-
+import Copyright from "../../components/Copyright";
+import useUser from "../../hooks/useUser";
 const drawerWidth = 240;
 
 const useStyles = makeStyles((theme) => ({
   root: {
-    display: "flex"
+    display: "flex",
   },
   toolbar: {
-    paddingRight: 24 // keep right padding when drawer closed
+    paddingRight: 24, // keep right padding when drawer closed
   },
   toolbarIcon: {
     display: "flex",
     alignItems: "center",
     justifyContent: "flex-end",
     padding: "0 8px",
-    ...theme.mixins.toolbar
+    ...theme.mixins.toolbar,
   },
   appBar: {
     zIndex: theme.zIndex.drawer + 1,
     transition: theme.transitions.create(["width", "margin"], {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen
-    })
+      duration: theme.transitions.duration.leavingScreen,
+    }),
   },
   appBarShift: {
     marginLeft: drawerWidth,
     width: `calc(100% - ${drawerWidth}px)`,
     transition: theme.transitions.create(["width", "margin"], {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen
-    })
+      duration: theme.transitions.duration.enteringScreen,
+    }),
   },
   menuButton: {
-    marginRight: 36
+    marginRight: 36,
   },
   menuButtonHidden: {
-    display: "none"
+    display: "none",
   },
   title: {
-    flexGrow: 1
+    flexGrow: 1,
   },
   drawerPaper: {
     position: "relative",
@@ -90,100 +72,88 @@ const useStyles = makeStyles((theme) => ({
     width: drawerWidth,
     transition: theme.transitions.create("width", {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen
-    })
+      duration: theme.transitions.duration.enteringScreen,
+    }),
   },
   drawerPaperClose: {
     overflowX: "hidden",
     transition: theme.transitions.create("width", {
       easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.leavingScreen
+      duration: theme.transitions.duration.leavingScreen,
     }),
     width: theme.spacing(7),
     [theme.breakpoints.up("sm")]: {
-      width: theme.spacing(9)
-    }
+      width: theme.spacing(9),
+    },
   },
   appBarSpacer: theme.mixins.toolbar,
   content: {
     flexGrow: 1,
     height: "100vh",
-    overflow: "auto"
+    overflow: "auto",
   },
   container: {
     paddingTop: theme.spacing(4),
-    paddingBottom: theme.spacing(4)
+    paddingBottom: theme.spacing(4),
   },
   paper: {
     padding: theme.spacing(2),
     display: "flex",
     overflow: "auto",
-    flexDirection: "column"
+    flexDirection: "column",
   },
   fixedHeight: {
-    height: 240
+    height: 240,
   },
   form: {
     width: "100%", // Fix IE 11 issue.
     height: "100%",
-    marginTop: theme.spacing(24)
+    marginTop: theme.spacing(24),
   },
   submit: {
-    margin: theme.spacing(3, 0, 2)
-  }
+    margin: theme.spacing(3, 0, 2),
+  },
 }));
-
 
 export default function Dashboard() {
   const router = useRouter();
-  const [username, setUsername] = React.useState("");
   const [privateKey, setPrivateKey] = React.useState("");
   const [passphrase, setPassphrase] = React.useState("");
 
   const get_privateKey = (event) => {
     event.preventDefault();
     if (!passphrase) {
-      alert('请输入口令');
-      return
+      alert("请输入口令");
+      return;
     }
-    axios.post("/api/info", {
-      username: username,
-      passphrase: passphrase
-    }
-    ).then((response) => {
-      if (response.data.msg == 'false') {
-        alert('口令不正确');
-        return
-      }
-      if (response.data.private_key) {
-        setPrivateKey(response.data.private_key);
-      } else {
-        alert("请先申请证书");
-        router.push("/dashboard/apply");
-        return;
-      }
-    }).catch((error) => {
-      console.log(error);
-    })
-  }
-
-  useEffect(() => {
-    const token = localStorage.getItem("token")
-    axios.post("/api/auth", {
-      token: token
-    })
+    axios
+      .post("/api/info", {
+        username: username,
+        passphrase: passphrase,
+      })
       .then((response) => {
-        if (response.data.username) {
-          setUsername(response.data.username);
+        if (response.data && response.data.private_key) {
+          setPrivateKey(response.data.private_key);
         } else {
-          router.push("/signin");
+          alert("口令不正确");
+          router.push("/dashboard/apply");
+          return;
         }
       })
       .catch((error) => {
         console.log(error);
-        router.push("/signin");
-      })
-  }, []);
+      });
+  };
+
+  const { username, isLoading, isError } = useUser();
+
+  useEffect(() => {
+    if (isError) {
+      router.push("/signin");
+    }
+  }, [isError]);
+  if (isError) return <div>You are not authorized </div>;
+  if (isLoading) return <div>loading...</div>;
 
   const classes = useStyles();
   const [open, setOpen] = React.useState(true);
@@ -208,71 +178,49 @@ export default function Dashboard() {
   return (
     <div className={classes.root}>
       <CssBaseline />
-      <AppBar
-        position="absolute"
-        className={clsx(classes.appBar, open && classes.appBarShift)}
-      >
+      <AppBar position="absolute" className={clsx(classes.appBar, open && classes.appBarShift)}>
         <Toolbar className={classes.toolbar}>
-          <IconButton
-            edge="start"
-            color="inherit"
-            aria-label="open drawer"
-            onClick={handleDrawerOpen}
-            className={clsx(
-              classes.menuButton,
-              open && classes.menuButtonHidden
-            )}
-          >
+          <IconButton edge="start" color="inherit" aria-label="open drawer" onClick={handleDrawerOpen} className={clsx(classes.menuButton, open && classes.menuButtonHidden)}>
             <MenuIcon />
           </IconButton>
-          <Typography
-            component="h1"
-            variant="h6"
-            color="inherit"
-            noWrap
-            className={classes.title}
-          >
+          <Typography component="h1" variant="h6" color="inherit" noWrap className={classes.title}>
             Dashboard
           </Typography>
 
-          <IconButton
-            aria-label="account of current user"
-            aria-controls="menu-appbar"
-            aria-haspopup="true"
-            onClick={handleMenu}
-            color="inherit"
-          >
+          <IconButton aria-label="account of current user" aria-controls="menu-appbar" aria-haspopup="true" onClick={handleMenu} color="inherit">
             <AccountCircle />
           </IconButton>
           <Menu
             id="menu-appbar"
             anchorEl={anchorEl}
             anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
+              vertical: "top",
+              horizontal: "right",
             }}
             keepMounted
             transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
+              vertical: "top",
+              horizontal: "right",
             }}
             open={open_anchor}
             onClose={handleClose}
           >
-            <MenuItem onClick={handleClose}>个人信息</MenuItem>
-            <MenuItem onClick={() => {
-              localStorage.removeItem("token");
-              router.push("/signin");
-            }}>退出登录</MenuItem>
+            <MenuItem onClick={() => router.push("/dashboard/info")}>个人信息</MenuItem>
+            <MenuItem
+              onClick={async () => {
+                await fetch("/api/logout");
+                router.push("/signin");
+              }}
+            >
+              退出登录
+            </MenuItem>
           </Menu>
-
-
         </Toolbar>
       </AppBar>
       <Drawer
         variant="permanent"
         classes={{
-          paper: clsx(classes.drawerPaper, !open && classes.drawerPaperClose)
+          paper: clsx(classes.drawerPaper, !open && classes.drawerPaperClose),
         }}
         open={open}
       >
@@ -368,7 +316,7 @@ export default function Dashboard() {
         <div className={classes.paper}>
           <form className={classes.form} noValidate>
             <Typography variant="h4" gutterBottom>
-              用户名:  {username}
+              用户名: {username}
             </Typography>
             <TextField
               variant="outlined"
@@ -394,18 +342,13 @@ export default function Dashboard() {
             >
               查看私钥
             </Button>
-
-
           </form>
         </div>
-        <textarea id="w3review" name="w3review" rows="20" cols="70" defaultValue={privateKey}>
-        </textarea>
-
+        <textarea id="w3review" name="w3review" rows="20" cols="70" defaultValue={privateKey}></textarea>
 
         <Box mt={8}>
           <Copyright />
         </Box>
-
       </Container>
     </div>
   );
