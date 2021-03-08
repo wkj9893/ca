@@ -1,24 +1,11 @@
 import Head from "next/head";
 import Copyright from "../components/Copyright";
 import { useRouter } from "next/router";
-import React, { useEffect } from "react";
 import Typography from "@material-ui/core/Typography";
 import styles from "../styles/Home.module.css";
 
-import useUser from "../hooks/useUser";
-
 export default function Home() {
   const router = useRouter();
-
-  const { username, isLoading, isError } = useUser();
-
-  useEffect(() => {
-    if (isError) {
-      router.push("/signin");
-    }
-  }, [isError]);
-  if (isError) return <div>You are not authorized </div>;
-  if (isLoading) return <div>loading...</div>;
 
   return (
     <div className={styles.container}>
