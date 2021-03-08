@@ -1,6 +1,6 @@
 import User from "../../models/User";
 import dbConnect from "../../utils/dbConnect";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 export default async (req, res) => {
   if (req.method === "POST") {

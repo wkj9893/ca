@@ -2,7 +2,7 @@ import User from "../../models/User";
 import dbConnect from "../../utils/dbConnect";
 import jwt from "jsonwebtoken";
 import cookie from "cookie";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 
 export default async (req, res) => {
   if (req.method == "POST") {
